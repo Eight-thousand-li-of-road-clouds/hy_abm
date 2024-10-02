@@ -1,5 +1,6 @@
 # A杭州某高校
 import concurrent.futures
+import os
 import random
 import pandas as pd
 from mesa import Model, Agent
@@ -8,6 +9,8 @@ from mesa.space import MultiGrid
 from mesa.datacollection import DataCollector
 from datetime import datetime, timedelta
 import numpy as np
+#时间分析
+import cProfile
 
 
 class StudentAgent(Agent):
@@ -185,10 +188,16 @@ class SchoolModel(Model):
     def run_model(self, **kwargs):
         num_runs = kwargs.get('num_runs', 1)  # 获取 num_runs 参数，如果不存在则默认为 1
         all_results = []
-
-        for _ in range(num_runs):
-            new_infections, dates = self.run_single_model()
-            all_results.append(new_infections)
+        max_workers = min(num_runs, os.cpu_count())
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(self.run_single_model) for _ in range(num_runs)]
+            for future in concurrent.futures.as_completed(futures):
+                # try:
+                new_infections, dates = future.result()
+                all_results.append(new_infections)
+                # except Exception as exc:
+                #     print(f'Generated an exception: {exc}')
+        return all_results
 
         # 创建结果DataFrame
         results_df = pd.DataFrame(all_results).T
@@ -202,4 +211,11 @@ class SchoolModel(Model):
 
 if __name__ == "__main__":
     model = SchoolModel(1000, initial_infected=1)
-    model.run_model(num_runs=3)  # 指定循环次数
+    model.run_model(num_runs=5)  # 指定循环次数
+    # cProfile.run('model.run_model(num_runs=1000)','heyue_A_hzc.prof')
+
+# #分析prof
+# import pstats
+# p=pstats.Stats('heyue_A_hzc.prof')
+# p.strip_dirs()
+# p.sort_stats('tottime').print_stats(10)
