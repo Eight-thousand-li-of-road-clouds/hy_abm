@@ -208,7 +208,7 @@ if __name__ == "__main__":
     cProfile.run('model.run_model(num_runs=20)','heyue_A_hzc_joblib.prof')
 
 # #分析prof
-# import pstats
-# p=pstats.Stats('heyue_A_hzc.prof')
-# p.strip_dirs()
-# p.sort_stats('tottime').print_stats(10)
+import pstats
+p=pstats.Stats('heyue_A_hzc.prof')
+p.strip_dirs()
+p.sort_stats('tottime').print_stats(10)
